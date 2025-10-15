@@ -1,13 +1,51 @@
-# Node.js
+# ========================================
+# Frontend (Next.js)
+# ========================================
 frontend/node_modules/
 frontend/.next/
-frontend/.env.local
+frontend/out/
+frontend/build/
+frontend/.vercel/
 
-# Python (for later)
+# Frontend env files
+frontend/.env*
+frontend/.env.local
+frontend/.env.production
+
+# Frontend TypeScript
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
+
+# Frontend testing
+frontend/coverage/
+
+# Frontend logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.pnpm-debug.log*
+
+# ========================================
+# Backend (Python/FastAPI) - for later
+# ========================================
 backend/venv/
 backend/__pycache__/
+backend/*.pyc
 backend/.env
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
 
-# OS files
+# ========================================
+# OS & Editor Files
+# ========================================
 .DS_Store
+*.pem
 *.log
+.vscode/
+.idea/
+
+# ========================================
+# Learning logs (keep tracked)
+# ========================================
+# Don't ignore learning-log/ - we want to commit these
