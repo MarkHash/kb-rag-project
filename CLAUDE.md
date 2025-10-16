@@ -14,6 +14,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Break down complex concepts into smaller, digestible pieces
 - Encourage hands-on practice by suggesting modifications for the developer to try
 
+**Code Style Preferences:**
+- Use JSDoc comments (/** ... */) for all types, interfaces, and functions
+- JSDoc format enables better IDE tooltips and documentation
+- Example:
+  ```typescript
+  /** Represents a user message in the chat */
+  export type Message = {
+    /** Unique identifier for the message */
+    id: string;
+  };
+  ```
+
 **Working Style:**
 - **The developer runs all commands themselves** - Do NOT execute bash commands for setup, installation, or running servers
 - Provide command instructions with explanations, then wait for the developer to run them
