@@ -1,6 +1,7 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Message } from './types';
+import ChatMessage from './components/ChatMessage';
 
 /**
  * Home page component - Main chat interface
@@ -22,6 +23,12 @@ export default function Home() {
   /** Track if component has mounted (client-side only) */
   const [isMounted, setIsMounted] = useState(false);
 
+  /** Track if AI is currently generating a response */
+  const [isLoading, setIsLoading] = useState(false);
+
+  /** Reference to the messages container for auto-scrolling */
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
   /**
    * Set mounted flag after component loads on client
    */
@@ -30,10 +37,33 @@ export default function Home() {
   }, []);
 
   /**
+   * Scroll to bottom whenever messages change or loading state changes
+   */
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoading]);
+
+  /**
+   * Clears all messages and resets to initial state
+   */
+  const handleClearChat = () => {
+    setMessages([
+      {
+        id: '1',
+        text: 'Hello! How can I help you today?',
+        sender: 'assistant',
+        timestamp: new Date(),
+      },
+    ]);
+    setInput(''); // Clear any text in input
+  };
+
+  /**
    * Handles sending a new message
    */
-  const handleSend = () => {
+  const handleSend = async () => {
     if (input.trim() === '') return; // Don't send empty messages
+    if (isLoading) return;
 
     // Create new user message
     const newMessage: Message = {
@@ -43,13 +73,28 @@ export default function Home() {
       timestamp: new Date(),
     };
 
-    // Add message to the list
-    setMessages([...messages, newMessage]);
+    // Add user message to the list
+    setMessages((prev) => [...prev, newMessage]);
 
     // Clear input
     setInput('');
 
-    // TODO: Later we'll call the AI API here
+    // Set loading state
+    setIsLoading(true);
+
+    // Simulate AI response (later this will be a real API call)
+    setTimeout(() => {
+      const aiResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        text: 'This is a mock response. When we connect the RAG backend, real AI responses will appear here!',
+        sender: 'assistant',
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, aiResponse]);
+      setIsLoading(false);
+    }, 2000); // 2 second delay to simulate API call
+
   };
 
   /**
@@ -62,17 +107,32 @@ export default function Home() {
     }
   };
 
+  /**
+   * Scrolls to the bottom of the messages container
+   */
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth'});
+  };
+
   return (
     <div className='flex flex-col h-screen bg-gray-50'>
       {/* Header */}
       <header className='bg-white shadow-sm p-4 border-b border-gray-200'>
-        <div className='max-w-4xl mx-auto'>
-          <h1 className='text-2xl font-bold text-gray-800'>
-            AI Knowledge Base Chat
-          </h1>
-          <p className='text-sm text-gray-600'>
-            Ask questions about our knowledge base
-          </p>
+        <div className='max-w-4xl mx-auto flex items-center justify-between'>
+          <div>
+            <h1 className='text-2xl font-bold text-gray-800'>
+              AI Knowledge Base Chat
+            </h1>
+            <p className='text-sm text-gray-600'>
+              Ask questions about our knowledge base
+            </p>
+          </div>
+          <button
+            onClick={handleClearChat}
+            className='px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors'
+          >
+            Clear Chat
+          </button>
         </div>
       </header>
 
@@ -80,30 +140,26 @@ export default function Home() {
       <div className='flex-1 overflow-y-auto p-4'>
         <div className='max-w-4xl mx-auto space-y-4'>
           {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${
-                message.sender === 'user' ? 'justify-end' : 'justify-start'
-              }`}
-            >
-              <div
-                className={`max-w-[70%] rounded-lg p-3 ${
-                  message.sender === 'user'
-                    ? 'bg-blue-500 text-white'
-                    : message.sender === 'assistant'
-                    ? 'bg-white text-gray-800 shadow'
-                    : 'bg-gray-200 text-gray-600'
-                }`}
-              >
-                <p className='text-sm'>{message.text}</p>
-                {isMounted && (
-                  <span className='text-xs opacity-70 mt-1 block'>
-                    {message.timestamp.toLocaleTimeString()}
-                  </span>
-                )}
+            <ChatMessage key={message.id} message={message} isMounted={isMounted} />
+          ))}
+
+          {/* Loading indicator */}
+          {isLoading && (
+            <div className='flex justify-start'>
+              <div className='bg-white text-gray-800 shadow rounded-lg p-3 max-w-[70%]'>
+                <div className='flex items-center gap-2'>
+                  <div className='flex gap-1'>
+                    <div className='w-2 h-2 bg-gray-400 rounded-full animate-bounce' style={{ animationDelay: '0ms' }}></div>
+                    <div className='w-2 h-2 bg-gray-400 rounded-full animate-bounce' style={{ animationDelay: '150ms' }}></div>
+                    <div className='w-2 h-2 bg-gray-400 rounded-full animate-bounce' style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                  <span className='text-sm text-gray-600'>AI is thinking...</span>
+                </div>
               </div>
             </div>
-          ))}
+          )}
+          {/* Invisible element at the bottom for auto-scroll */}
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
