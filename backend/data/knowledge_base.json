@@ -1,0 +1,60 @@
+{
+"articles": [
+    {
+    "id": "kb-001",
+    "title": "How to Reset Your Password",
+    "content": "To reset your password:\n\n1. Click on 'Forgot Password' on the login page\n2. Enter your email address\n3. Check your email for a password reset link (check spam folder if not found)\n4. Click the link and enter your new password\n5. Your new password must be at least 8 characters and include uppercase, lowercase, and numbers\n\nIf you don't receive the email within 5 minutes, contact support.",
+    "category": "Account Management",
+    "tags": ["password", "login", "security", "account"]
+    },
+    {
+    "id": "kb-002",
+    "title": "How to Update Billing Information",
+    "content": "To update your billing information:\n\n1. Log into your account\n2. Navigate to Settings > Billing\n3. Click 'Payment Methods'\n4. Click 'Add New Card' or 'Edit' on existing card\n5. Enter your card details and billing address\n6. Click 'Save'\n\nChanges take effect immediately. Your next charge will use the updated payment method.",
+    "category": "Billing",
+    "tags": ["billing", "payment", "credit card", "subscription"]
+    },
+    {
+    "id": "kb-003",
+    "title": "How to Export Your Data",
+    "content": "To export your data:\n\n1. Go to Settings > Data & Privacy\n2. Click 'Export Data'\n3. Select the data types you want to export (messages, files, settings)\n4. Choose format: CSV or JSON\n5. Click 'Request Export'\n6. You'll receive an email whenyour export is ready (usually within 24 hours)\n7. Download your data from the link in the email\n\nExport links expire after 7 days.",
+    "category": "Data Management",
+    "tags": ["export", "data", "download", "privacy", "GDPR"]
+    },
+    {
+    "id": "kb-004",
+    "title": "Troubleshooting Login Issues",
+    "content": "If you're having trouble logging in:\n\n1. Verifyyou're using the correct email address\n2. Check if Caps Lock is on\n3. Clear your browser cache and cookies\n4. Try a different browser or incognito mode\n5. Reset your password if you've forgotten it\n6. Check if your account has been locked (too many failed attempts - wait 30 minutes)\n\nIf the problem persists, contact support with your email and a screenshot of the error message.",
+    "category": "Account Management",
+    "tags": ["login", "troubleshooting", "account", "error"]
+    },
+    {
+    "id": "kb-005",
+    "title": "How to Cancel Your Subscription",
+    "content": "To cancel your subscription:\n\n1. Go to Settings> Billing > Subscription\n2. Click 'Manage Subscription'\n3. Click'Cancel Subscription'\n4. Select a reason for canceling (helps us improve)\n5. Confirm cancellation\n\nYour account remains active until the end of your current billing period. You won't be charged again. You can reactivate anytime before the period ends.",
+    "category": "Billing",
+    "tags": ["cancel", "subscription", "billing", "refund"]
+    },
+    {
+    "id": "kb-006",
+    "title": "How to Enable Two-Factor Authentication",
+    "content": "To enable two-factor authentication (2FA):\n\n1. Go to Settings > Security\n2. Click 'Enable Two-Factor Authentication'\n3. Choose your method: SMS or Authenticator App (app recommended)\n4. For app: Scan the QR code with Google Authenticator or Authy\n5. Enter the 6-digit code to verify\n6. Save your backup codes in a safe place\n\n2FA adds an extra layer of security to your account. We highly recommend enabling it.",
+    "category": "Security",
+    "tags": ["2fa", "security", "authentication", "account", "protection"]
+    },
+    {
+    "id": "kb-007",
+    "title": "Understanding Your Bill",
+    "content": "Your bill includes:\n\n1. Subscription Fee: Your plan's monthly cost\n2. Usage Charges: Any usage beyond your plan limits\n3. Add-ons: Extra features you've purchased\n4. Taxes: Applied based on your location\n\nBills are generated on your billing date each month. You can view detailed breakdowns in Settings > Billing > Invoices. Download PDFs for your records.",
+    "category": "Billing",
+    "tags": ["billing", "invoice", "charges", "pricing", "plan"]
+    },
+    {
+    "id": "kb-008",
+    "title": "How to Invite Team Members",
+    "content": "To invite team members:\n\n1. Go to Settings > Team\n2. Click 'Invite Member'\n3. Enter their email address\n4. Select their role (Admin, Member, or Viewer)\n5. Click 'Send Invitation'\n\nThey'll receive an email invitation. The invite expires in 7 days. You can manage roles and remove members from theTeam settings page. Admin role required to invite members.",
+    "category": "Team Management",
+    "tags": ["team", "collaboration", "invite", "members", "users"]
+    }
+]
+}

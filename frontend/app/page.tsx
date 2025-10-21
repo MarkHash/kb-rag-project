@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Message } from './types';
 import ChatMessage from './components/ChatMessage';
+import { sendChatMessage } from './api/client';
 
 /**
  * Home page component - Main chat interface
@@ -82,18 +83,47 @@ export default function Home() {
     // Set loading state
     setIsLoading(true);
 
-    // Simulate AI response (later this will be a real API call)
-    setTimeout(() => {
+    try {
+      // Call backend API
+      const response = await sendChatMessage(newMessage.text);
+
+      // Create AI response message
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: 'This is a mock response. When we connect the RAG backend, real AI responses will appear here!',
+        text: response.answer,
         sender: 'assistant',
+        timestamp: new Date(),
+        sources: response.sources,
+      };
+      setMessages((prev) => [...prev, aiResponse]);
+    } catch (error) {
+      // Handle error = show error message to user
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: 'Sorry, I encountered an error connecting to the server. Please make sure the backend is running.',
+        sender: 'system',
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, aiResponse]);
+      setMessages((prev) => [...prev, errorMessage]);
+      console.error('Chat error:', error);
+    } finally {
+      // Always stop loading, whether success or error
       setIsLoading(false);
-    }, 2000); // 2 second delay to simulate API call
+    }
+
+    // // Simulate AI response (later this will be a real API call)
+    // setTimeout(() => {
+    //   const aiResponse: Message = {
+    //     id: (Date.now() + 1).toString(),
+    //     text: 'This is a mock response. When we connect the RAG backend, real AI responses will appear here!',
+    //     sender: 'assistant',
+    //     timestamp: new Date(),
+    //   };
+
+    //   setMessages((prev) => [...prev, aiResponse]);
+    //   setIsLoading(false);
+    // }, 2000); // 2 second delay to simulate API call
 
   };
 

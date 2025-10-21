@@ -16,10 +16,13 @@ export type Message = {
 
   /** When the message was sent */
   timestamp: Date;
+
+  /** Source articles used to generate the answer (assistant messages only) */
+  sources?: Source[];
 };
 
 /**
- * Represents the source/citation for an AI response
+ * Represents the source/citation for an AI response (matches backend)
  */
 export type Source = {
   /** Unique identifier for the article */
@@ -28,8 +31,14 @@ export type Source = {
   /** Title of the article */
   title: string;
 
-  /** Optional link to the full article */
-  url?: string;
+  /** Full content of the article */
+  content: string;
+
+  /** Category of the article */
+  category: string;
+
+  /** Tags for the article */
+  tags: string[];
 };
 
 /**
@@ -45,3 +54,4 @@ export type ChatResponse = {
   /** Unique ID to track the conversation */
   conversationId: string;
 };
+

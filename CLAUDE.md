@@ -151,14 +151,20 @@ git push origin main # Auto-deploys to Vercel via GitHub integration
 
 ### Backend (FastAPI)
 ```bash
-# Setup
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install fastapi uvicorn pydantic openai pinecone-client langchain sqlalchemy psycopg2-binary
+# Setup with Conda (preferred)
+conda create -n kb-rag python=3.11
+conda activate kb-rag
+pip install fastapi uvicorn pydantic python-multipart
+
+# Later: Install ML packages
+conda install -c conda-forge sentence-transformers
+pip install openai pinecone-client langchain sqlalchemy psycopg2-binary
 
 # Development
-uvicorn main:app --reload              # Start dev server at http://localhost:8000
-uvicorn main:app --reload --port 8001  # Use different port if needed
+cd backend
+conda activate kb-rag
+uvicorn app.main:app --reload              # Start dev server at http://localhost:8000
+uvicorn app.main:app --reload --port 8001  # Use different port if needed
 
 # Testing
 pytest                           # Run all tests
@@ -168,6 +174,11 @@ pytest -v --cov=app             # Run with coverage
 # API Documentation (auto-generated)
 # Visit http://localhost:8000/docs for Swagger UI
 # Visit http://localhost:8000/redoc for ReDoc
+
+# Environment Management
+conda activate kb-rag    # Activate environment
+conda deactivate         # Deactivate environment
+conda env list          # List all environments
 ```
 
 ### Database
