@@ -35,6 +35,22 @@ export default function Home() {
    */
   useEffect(() => {
     setIsMounted(true);
+
+    // Load saved messages from localStorage
+    const savedMessages = localStorage.getItem('chatMessages');
+    if (savedMessages) {
+      try {
+        const parsed = JSON.parse(savedMessages);
+        // Convert timestamp strings back to Date objects
+        const messagesWithDates = parsed.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp),
+        }));
+        setMessages(messagesWithDates);
+      } catch (error) {
+        console.error('Failed to load saved messages:', error);
+      }
+    }
   }, []);
 
   /**
@@ -43,6 +59,16 @@ export default function Home() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
+
+  /**
+   * Save messages to localStorage whenever they change
+   * This ensures conversation persists across page refreshes
+   */
+  useEffect(() => {
+    if(isMounted) {
+      localStorage.setItem('chatMessages', JSON.stringify(messages));
+    }
+  }, [messages, isMounted])
 
   /**
    * Clears all messages and resets to initial state
@@ -57,6 +83,9 @@ export default function Home() {
       },
     ]);
     setInput(''); // Clear any text in input
+
+    // Clear saved messages from localStorage
+    localStorage.removeItem('chatMessages');
   };
 
   /**
@@ -206,9 +235,14 @@ export default function Home() {
           />
           <button
             onClick={handleSend}
-            className='bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors font-medium'
+            disabled={isLoading}
+            className={`px-6 py-2 rounded-lg transition-colors font-medium ${
+              isLoading
+                ? 'bg-gray-400 text-gray-200 cursor-not-allowed' // Disabled Style
+                : 'bg-blue-500 text-white hover:bg-blue-600' // Normal style
+              }`}
           >
-            Send
+            {isLoading ? 'Sending...' : 'Send'}
           </button>
         </div>
       </div>
