@@ -2,7 +2,6 @@
  * API client for backend communication
  */
 
-import { Message } from '../types';
 
 /** Base URL for backend API - uses environment variable or falls back to localhost */
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';

@@ -42,7 +42,7 @@ export default function Home() {
       try {
         const parsed = JSON.parse(savedMessages);
         // Convert timestamp strings back to Date objects
-        const messagesWithDates = parsed.map((msg: any) => ({
+        const messagesWithDates = parsed.map((msg: Message) => ({
           ...msg,
           timestamp: new Date(msg.timestamp),
         }));
