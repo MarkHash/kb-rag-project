@@ -30,6 +30,9 @@ export default function Home() {
   /** Reference to the messages container for auto-scrolling */
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  /** Track if we've loaded from localStorage already */
+  const hasLoadedRef = useRef(false);
+
   /**
    * Set mounted flag after component loads on client
    */
@@ -65,8 +68,10 @@ export default function Home() {
    * This ensures conversation persists across page refreshes
    */
   useEffect(() => {
+    console.log('Save effect running:', {isMounted, messagesCount: messages.length });
     if(isMounted) {
       localStorage.setItem('chatMessages', JSON.stringify(messages));
+      console.log('Saved to localStorage!');
     }
   }, [messages, isMounted])
 
