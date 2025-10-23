@@ -8,6 +8,7 @@ import { sendChatMessage } from './api/client';
  * Home page component - Main chat interface
  */
 export default function Home() {
+  console.log('Component rendering!');
   /** State to store all chat messages */
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -37,6 +38,7 @@ export default function Home() {
    * Set mounted flag after component loads on client
    */
   useEffect(() => {
+    console.log('Mount effect running!');
     setIsMounted(true);
 
     // Load saved messages from localStorage
@@ -60,6 +62,7 @@ export default function Home() {
    * Scroll to bottom whenever messages change or loading state changes
    */
   useEffect(() => {
+    console.log('Scroll effect running');
     scrollToBottom();
   }, [messages, isLoading]);
 
