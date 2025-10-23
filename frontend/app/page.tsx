@@ -8,7 +8,6 @@ import { sendChatMessage } from './api/client';
  * Home page component - Main chat interface
  */
 export default function Home() {
-  console.log('Component rendering!');
   /** State to store all chat messages */
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -31,14 +30,10 @@ export default function Home() {
   /** Reference to the messages container for auto-scrolling */
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  /** Track if we've loaded from localStorage already */
-  const hasLoadedRef = useRef(false);
-
   /**
    * Set mounted flag after component loads on client
    */
   useEffect(() => {
-    console.log('Mount effect running!');
     setIsMounted(true);
 
     // Load saved messages from localStorage
@@ -62,24 +57,21 @@ export default function Home() {
    * Scroll to bottom whenever messages change or loading state changes
    */
   useEffect(() => {
-    console.log('Scroll effect running');
     scrollToBottom();
   }, [messages, isLoading]);
 
   /**
    * Save messages to localStorage whenever they change
    * This ensures conversation persists across page refreshes
-   * NOTE: Moved to handleSend and handleClearChat to avoid prpduction build issues
    */
 
-  // useEffect removed - saving directly in handlers instead
-  // useEffect(() => {
-  //   console.log('Save effect running:', {isMounted, messagesCount: messages.length });
-  //   if(isMounted) {
-  //     localStorage.setItem('chatMessages', JSON.stringify(messages));
-  //     console.log('Saved to localStorage!');
-  //   }
-  // }, [messages, isMounted])
+  useEffect(() => {
+    console.log('Save effect running:', {isMounted, messagesCount: messages.length });
+    if(isMounted) {
+      localStorage.setItem('chatMessages', JSON.stringify(messages));
+      console.log('Saved to localStorage!');
+    }
+  }, [messages, isMounted])
 
   /**
    * Clears all messages and resets to initial state
@@ -195,10 +187,6 @@ export default function Home() {
             </h1>
             <p className='text-sm text-gray-600'>
               Ask questions about our knowledge base
-            </p>
-            {/* DEBUG INFO - Remove after testing */}
-            <p className='text-xs text-red-600'>
-              Debug: isMounted={isMounted.toString()} | messages={messages.length}
             </p>
           </div>
           <button
