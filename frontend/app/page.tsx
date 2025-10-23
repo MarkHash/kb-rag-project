@@ -69,14 +69,17 @@ export default function Home() {
   /**
    * Save messages to localStorage whenever they change
    * This ensures conversation persists across page refreshes
+   * NOTE: Moved to handleSend and handleClearChat to avoid prpduction build issues
    */
-  useEffect(() => {
-    console.log('Save effect running:', {isMounted, messagesCount: messages.length });
-    if(isMounted) {
-      localStorage.setItem('chatMessages', JSON.stringify(messages));
-      console.log('Saved to localStorage!');
-    }
-  }, [messages, isMounted])
+
+  // useEffect removed - saving directly in handlers instead
+  // useEffect(() => {
+  //   console.log('Save effect running:', {isMounted, messagesCount: messages.length });
+  //   if(isMounted) {
+  //     localStorage.setItem('chatMessages', JSON.stringify(messages));
+  //     console.log('Saved to localStorage!');
+  //   }
+  // }, [messages, isMounted])
 
   /**
    * Clears all messages and resets to initial state
@@ -192,6 +195,10 @@ export default function Home() {
             </h1>
             <p className='text-sm text-gray-600'>
               Ask questions about our knowledge base
+            </p>
+            {/* DEBUG INFO - Remove after testing */}
+            <p className='text-xs text-red-600'>
+              Debug: isMounted={isMounted.toString()} | messages={messages.length}
             </p>
           </div>
           <button
