@@ -64,14 +64,11 @@ export default function Home() {
    * Save messages to localStorage whenever they change
    * This ensures conversation persists across page refreshes
    */
-
   useEffect(() => {
-    console.log('Save effect running:', {isMounted, messagesCount: messages.length });
-    if(isMounted) {
+    if (isMounted) {
       localStorage.setItem('chatMessages', JSON.stringify(messages));
-      console.log('Saved to localStorage!');
     }
-  }, [messages, isMounted])
+  }, [messages, isMounted]);
 
   /**
    * Clears all messages and resets to initial state
@@ -143,20 +140,6 @@ export default function Home() {
       // Always stop loading, whether success or error
       setIsLoading(false);
     }
-
-    // // Simulate AI response (later this will be a real API call)
-    // setTimeout(() => {
-    //   const aiResponse: Message = {
-    //     id: (Date.now() + 1).toString(),
-    //     text: 'This is a mock response. When we connect the RAG backend, real AI responses will appear here!',
-    //     sender: 'assistant',
-    //     timestamp: new Date(),
-    //   };
-
-    //   setMessages((prev) => [...prev, aiResponse]);
-    //   setIsLoading(false);
-    // }, 2000); // 2 second delay to simulate API call
-
   };
 
   /**
