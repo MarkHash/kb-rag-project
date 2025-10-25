@@ -63,7 +63,7 @@ export default function Home() {
       }
     }
     loadConversations();
-  }, []);
+  }, [isLoaded, user]);
 
   /**
    * Scroll to bottom whenever messages change or loading state changes
