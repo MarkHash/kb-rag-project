@@ -2,7 +2,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Message } from './types';
 import ChatMessage from './components/ChatMessage';
-import { sendChatMessage } from './api/client';
+import { UserButton, useUser } from '@clerk/nextjs';
+import { sendChatMessage, saveConversation, updateConversation, getUserConversations } from './api/client';
 
 /**
  * Home page component - Main chat interface
@@ -18,6 +19,9 @@ export default function Home() {
     },
   ]);
 
+  /** Get current user from Clerk */
+  const { user, isLoaded } = useUser();
+
   /** State to store the current input text */
   const [input, setInput] = useState('');
 
@@ -26,6 +30,9 @@ export default function Home() {
 
   /** Track if AI is currently generating a response */
   const [isLoading, setIsLoading] = useState(false);
+
+  /** Track the current conversation ID in the database */
+  const [conversationId, setConversationId] = useState<number | null>(null);
 
   /** Reference to the messages container for auto-scrolling */
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -36,21 +43,26 @@ export default function Home() {
   useEffect(() => {
     setIsMounted(true);
 
-    // Load saved messages from localStorage
-    const savedMessages = localStorage.getItem('chatMessages');
-    if (savedMessages) {
-      try {
-        const parsed = JSON.parse(savedMessages);
-        // Convert timestamp strings back to Date objects
-        const messagesWithDates = parsed.map((msg: Message) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp),
-        }));
-        setMessages(messagesWithDates);
-      } catch (error) {
-        console.error('Failed to load saved messages:', error);
+    const loadConversations = async () => {
+      if (isLoaded && user) {
+        try {
+          const conversations = await getUserConversations(user.id);
+          if (conversations.length > 0) {
+            const latestConversation = conversations[0];
+            setConversationId(latestConversation.id);
+            const messagesWithDates = latestConversation.messages.map((msg) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp),
+              sender: msg.sender as 'user' | 'assistant' | 'system',
+            }));
+            setMessages(messagesWithDates);
+          }
+        } catch (error) {
+        console.error('Failed to load conversations:', error);
+       }
       }
     }
+    loadConversations();
   }, []);
 
   /**
@@ -61,14 +73,28 @@ export default function Home() {
   }, [messages, isLoading]);
 
   /**
-   * Save messages to localStorage whenever they change
+   * Save messages to database whenever they change
    * This ensures conversation persists across page refreshes
    */
   useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem('chatMessages', JSON.stringify(messages));
-    }
-  }, [messages, isMounted]);
+    const saveToDataBase = async () => {
+      if (isMounted && isLoaded && user && messages.length > 0) {
+        try {
+          if (conversationId) {
+            // Update existing conversation
+            await updateConversation(conversationId, user.id, messages);
+          } else {
+            // Create new conversation
+            const newConversation = await saveConversation(user.id, messages);
+            setConversationId(newConversation.id);
+          }
+        } catch (error) {
+          console.error('Failed to save conversation:', error);
+        }
+      }
+    };
+    saveToDataBase();
+  }, [messages, isMounted, isLoaded, user, conversationId]);
 
   /**
    * Clears all messages and resets to initial state
@@ -84,8 +110,8 @@ export default function Home() {
     ]);
     setInput(''); // Clear any text in input
 
-    // Clear saved messages from localStorage
-    localStorage.removeItem('chatMessages');
+    // Set conversationId back to null
+    setConversationId(null);
   };
 
   /**
@@ -172,12 +198,25 @@ export default function Home() {
               Ask questions about our knowledge base
             </p>
           </div>
-          <button
-            onClick={handleClearChat}
-            className='px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors'
-          >
-            Clear Chat
-          </button>
+
+          <div className='flex items-center gap-3'>
+            {/* Show user greeting when loaded */}
+            {isLoaded && user && (
+              <p className='text-sm text-gray-600'>
+                Hello, {user.firstName || user.emailAddresses[0].emailAddress}
+              </p>
+            )}
+          
+            <button
+              onClick={handleClearChat}
+              className='px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors'
+            >
+              Clear Chat
+            </button>
+
+            {/* Clerk's pre-built user button with avatar & sign out */}
+            <UserButton />
+          </div>
         </div>
       </header>
 

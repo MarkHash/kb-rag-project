@@ -3,12 +3,17 @@ FastAPI backend for AI Knowledge Base Chat
 Provides RAG capabilities with local LLM and embeddings
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import json
 from pathlib import Path
 from pydantic import BaseModel
 from app.rag import RAGSystem
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.models import Conversation
+from typing import Optional
+from datetime import datetime
 
 # Initialise FastAPI app
 app = FastAPI(
@@ -65,6 +70,24 @@ class QueryResponse(BaseModel):
     answer: str
     sources: list[Article]
 
+class ConversationCreate(BaseModel):
+    """Request to create/update a conversation"""
+    user_id: str
+    messages: list[dict]
+    title: Optional[str] = None
+
+class ConversationResponse(BaseModel):
+    """Response with conversation data"""
+    id: int
+    user_id: str
+    messages: list[dict]
+    title: Optional[str]
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
 # API Endpoints
 @app.get("/")
 async def root():
@@ -102,3 +125,79 @@ async def chat(request: QueryRequest):
         "answer": result['answer'],
         "sources": result['sources'][:3]  # Return top 3 sources
     }
+
+@app.post("/conversations", response_model=ConversationResponse)
+async def create_conversation(
+    conversation: ConversationCreate,
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new conversation for a user
+    """
+    db_conversation = Conversation(
+        user_id=conversation.user_id,
+        messages=conversation.messages,
+        title=conversation.title
+    )
+    db.add(db_conversation)
+    db.commit()
+    db.refresh(db_conversation)
+    return db_conversation
+
+@app.get("/conversations/{user_id}", response_model=list[ConversationResponse])
+async def get_user_conversations(
+    user_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get all conversations for a specific user
+    """
+    conversations = db.query(Conversation).filter(
+        Conversation.user_id == user_id
+    ).order_by(Conversation.updated_at.desc()).all()
+    return conversations
+
+
+@app.get("/conversations/{user_id}/{conversation_id}", response_model=ConversationResponse)
+async def get_conversation(
+    user_id: str,
+    conversation_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Get a specific conversation
+    """
+    conversation = db.query(Conversation).filter(
+        Conversation.id == conversation_id,
+        Conversation.user_id == user_id,
+    ).first()
+
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return conversation
+
+
+@app.put("/conversations/{conversation_id}", response_model=ConversationResponse)
+async def update_conversation(
+    conversation_id: int,
+    conversation: ConversationCreate,
+    db: Session = Depends(get_db)
+):
+    """
+    Update an existing conversation
+    """
+    db_conversation = db.query(Conversation).filter(
+        Conversation.id == conversation_id,
+        Conversation.user_id == conversation.user_id,
+    ).first()
+
+    if not db_conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    db_conversation.messages = conversation.messages
+    if conversation.title:
+        db_conversation.title = conversation.title
+
+    db.commit()
+    db.refresh(db_conversation)
+    return db_conversation
