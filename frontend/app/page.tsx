@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Message } from './types';
+import { Message, Source } from './types';
 import ChatMessage from './components/ChatMessage';
 import { UserButton, useUser } from '@clerk/nextjs';
 import { sendChatMessage, saveConversation, updateConversation, getUserConversations } from './api/client';
@@ -50,12 +50,12 @@ export default function Home() {
 
           // Find the most recent conversation with user messages
           const conversationWithMessages = conversations.find(conv =>
-            conv.messages.some((msg: any) => msg.sender === 'user')
+            conv.messages.some((msg: { sender: string }) => msg.sender === 'user')
           );
 
           if (conversationWithMessages) {
             setConversationId(conversationWithMessages.id);
-            const messagesWithDates = conversationWithMessages.messages.map((msg: any) => ({
+            const messagesWithDates = conversationWithMessages.messages.map((msg: { id: string; text: string; sender: string; timestamp: string; sources?: Source[] }) => ({
               ...msg,
               timestamp: new Date(msg.timestamp),
               sender: msg.sender as 'user' | 'assistant' | 'system',
