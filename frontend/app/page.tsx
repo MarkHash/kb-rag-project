@@ -10,14 +10,7 @@ import { sendChatMessage, saveConversation, updateConversation, getUserConversat
  */
 export default function Home() {
   /** State to store all chat messages */
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: 'Hello! How can I help you today?',
-      sender: 'assistant',
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
 
   /** Get current user from Clerk */
   const { user, isLoaded } = useUser();
@@ -34,6 +27,12 @@ export default function Home() {
   /** Track the current conversation ID in the database */
   const [conversationId, setConversationId] = useState<number | null>(null);
 
+  /** Track if we're currently loading data to prevent saving during load */
+  const [isLoadingData, setIsLoadingData] = useState(false);
+
+  /** Track if we're currently creating a new conversation to prevent duplicates */
+  const [isCreating, setIsCreating] = useState(false);
+
   /** Reference to the messages container for auto-scrolling */
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -45,21 +44,40 @@ export default function Home() {
 
     const loadConversations = async () => {
       if (isLoaded && user) {
+        setIsLoadingData(true);
         try {
           const conversations = await getUserConversations(user.id);
-          if (conversations.length > 0) {
-            const latestConversation = conversations[0];
-            setConversationId(latestConversation.id);
-            const messagesWithDates = latestConversation.messages.map((msg) => ({
+
+          // Find the most recent conversation with user messages
+          const conversationWithMessages = conversations.find(conv =>
+            conv.messages.some((msg: any) => msg.sender === 'user')
+          );
+
+          if (conversationWithMessages) {
+            setConversationId(conversationWithMessages.id);
+            const messagesWithDates = conversationWithMessages.messages.map((msg: any) => ({
               ...msg,
               timestamp: new Date(msg.timestamp),
               sender: msg.sender as 'user' | 'assistant' | 'system',
             }));
             setMessages(messagesWithDates);
+            setIsLoadingData(false);
+          } else {
+            // No conversations found - show welcome message
+            setMessages([
+               {
+                id: '1',
+                text: 'Hello! How can I help you today?',
+                sender: 'assistant',
+                timestamp: new Date(),
+              },
+            ]);
+            setIsLoadingData(false);
           }
         } catch (error) {
         console.error('Failed to load conversations:', error);
-       }
+          setIsLoadingData(false);
+        }
       }
     }
     loadConversations();
@@ -78,23 +96,40 @@ export default function Home() {
    */
   useEffect(() => {
     const saveToDataBase = async () => {
-      if (isMounted && isLoaded && user && messages.length > 0) {
-        try {
-          if (conversationId) {
-            // Update existing conversation
-            await updateConversation(conversationId, user.id, messages);
-          } else {
-            // Create new conversation
-            const newConversation = await saveConversation(user.id, messages);
-            setConversationId(newConversation.id);
-          }
-        } catch (error) {
-          console.error('Failed to save conversation:', error);
+      // Don't save if not ready
+      if (!isMounted || !isLoaded || !user || messages.length === 0) {
+        return;
+      }
+
+      // Only save if conversation exists OR we have user messages (not just welcome)
+      const hasUserMessages = messages.some(m => m.sender === 'user');
+      if (!conversationId && !hasUserMessages) {
+        return;
+      }
+
+      // Prevent duplicate conversation creation
+      if (!conversationId && isCreating) {
+        return;
+      }
+
+      try {
+        if (conversationId) {
+          // Update existing conversation
+          await updateConversation(conversationId, user.id, messages);
+        } else {
+          // Create new conversation (first user message)
+          setIsCreating(true);
+          const newConversation = await saveConversation(user.id, messages);
+          setConversationId(newConversation.id);
+          setIsCreating(false);
         }
+      } catch (error) {
+        console.error('Failed to save conversation:', error);
+        setIsCreating(false);
       }
     };
     saveToDataBase();
-  }, [messages, isMounted, isLoaded, user, conversationId]);
+  }, [messages, isMounted, isLoaded, user, conversationId, isLoadingData, isCreating]);
 
   /**
    * Clears all messages and resets to initial state
