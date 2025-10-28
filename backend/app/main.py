@@ -3,7 +3,7 @@ FastAPI backend for AI Knowledge Base Chat
 Provides RAG capabilities with local LLM and embeddings
 """
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import json
 from pathlib import Path
@@ -14,6 +14,13 @@ from app.database import get_db
 from app.models import Conversation
 from typing import Optional
 from datetime import datetime
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from app.logger import logger
+
+# Initialise rate limiter
+limiter = Limiter(key_func=get_remote_address)
 
 # Initialise FastAPI app
 app = FastAPI(
@@ -21,6 +28,15 @@ app = FastAPI(
     description="AI-powered knowledge base with RAG",
     version="1.0.0"
 )
+
+# Custom rate limit error handler with logging
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    logger.warning(f"Rate limit exceeded for IP: {request.client.host}")
+    return _rate_limit_exceeded_handler(request, exc)
+
+# Add rate limiter to app
+app.state.limiter = limiter
 
 # Configure CORS (allow frontend to call backend)
 app.add_middleware(
@@ -112,19 +128,23 @@ async def get_article(article_id: str):
     return {"error": "Article not found"}
 
 @app.post("/chat", response_model=QueryResponse)
-async def chat(request: QueryRequest):
+@limiter.limit("10/minute")
+async def chat(request: Request, query: QueryRequest):
     """
     Chat endpoint - using RAG
     Retrieves relevant articles and generates intelligent answers
     """
-
-    # Use RAG pipeline to get answer + sources
-    result = rag_system.query(request.query, n_results=3)
-    
-    return {
-        "answer": result['answer'],
-        "sources": result['sources'][:3]  # Return top 3 sources
-    }
+    try:
+        # Use RAG pipeline to get answer + sources
+        result = rag_system.query(query.query, n_results=3)
+        
+        return {
+            "answer": result['answer'],
+            "sources": result['sources'][:3]  # Return top 3 sources
+        }
+    except Exception as e:
+        logger.error(f"Error in chat endpoint: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="An error occurred while processing your request")
 
 @app.post("/conversations", response_model=ConversationResponse)
 async def create_conversation(
@@ -134,15 +154,20 @@ async def create_conversation(
     """
     Create a new conversation for a user
     """
-    db_conversation = Conversation(
-        user_id=conversation.user_id,
-        messages=conversation.messages,
-        title=conversation.title
-    )
-    db.add(db_conversation)
-    db.commit()
-    db.refresh(db_conversation)
-    return db_conversation
+    try:
+        db_conversation = Conversation(
+            user_id=conversation.user_id,
+            messages=conversation.messages,
+            title=conversation.title
+        )
+        db.add(db_conversation)
+        db.commit()
+        db.refresh(db_conversation)
+        return db_conversation
+    except Exception as e:
+        logger.error(f"Error creating conversation for user {conversation.user_id}: {str(e)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to save conversation")
 
 @app.get("/conversations/{user_id}", response_model=list[ConversationResponse])
 async def get_user_conversations(
@@ -186,18 +211,23 @@ async def update_conversation(
     """
     Update an existing conversation
     """
-    db_conversation = db.query(Conversation).filter(
-        Conversation.id == conversation_id,
-        Conversation.user_id == conversation.user_id,
-    ).first()
+    try:
+        db_conversation = db.query(Conversation).filter(
+            Conversation.id == conversation_id,
+            Conversation.user_id == conversation.user_id,
+        ).first()
 
-    if not db_conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    
-    db_conversation.messages = conversation.messages
-    if conversation.title:
-        db_conversation.title = conversation.title
+        if not db_conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        db_conversation.messages = conversation.messages
+        if conversation.title:
+            db_conversation.title = conversation.title
 
-    db.commit()
-    db.refresh(db_conversation)
-    return db_conversation
+        db.commit()
+        db.refresh(db_conversation)
+        return db_conversation
+    except Exception as e:
+        logger.error(f"Error updating conversation {conversation_id}: {str(e)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to update conversation")

@@ -29,6 +29,9 @@ export async function sendChatMessage(query: string): Promise<{
     });
 
     if (!response.ok) {
+        if (response.status === 429) {
+            throw new Error('Too many requests. Please wait 1 minute and try again.');
+        }
         throw new Error(`API error: ${response.status}`);
     }
 
