@@ -155,3 +155,27 @@ export async function getConversation(
 
     return response.json();
 }
+
+/**
+ * Delete a conversation
+ */
+export async function deleteConversation(
+    conversationId: number,
+    userId: string
+): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}?user_id=${userId}`,
+        {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application.json',
+            }
+        }
+    );
+    if (!response.ok) {
+        if (response.status === 404) {
+            throw new Error('Conversation not found');
+        }
+    throw new Error(`API error: ${response.status}`);
+}
+return response.json();
+}

@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Message, Source } from './types';
 import ChatMessage from './components/ChatMessage';
 import { UserButton, useUser } from '@clerk/nextjs';
-import { sendChatMessage, saveConversation, updateConversation, getUserConversations } from './api/client';
+import { sendChatMessage, saveConversation, updateConversation, getUserConversations, deleteConversation, Conversation } from './api/client';
+import ConversationList from './components/ConversationList';
 
 /**
  * Home page component - Main chat interface
@@ -36,6 +37,9 @@ export default function Home() {
   /** Reference to the messages container for auto-scrolling */
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  /** Store all user conversations for the sidebar */
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+
   /**
    * Set mounted flag after component loads on client
    */
@@ -46,10 +50,11 @@ export default function Home() {
       if (isLoaded && user) {
         setIsLoadingData(true);
         try {
-          const conversations = await getUserConversations(user.id);
+          const loadConversations = await getUserConversations(user.id);
+          setConversations(loadConversations); // Store all conversations for sidebar
 
           // Find the most recent conversation with user messages
-          const conversationWithMessages = conversations.find(conv =>
+          const conversationWithMessages = loadConversations.find(conv =>
             conv.messages.some((msg: { sender: string }) => msg.sender === 'user')
           );
 
@@ -123,6 +128,8 @@ export default function Home() {
           setConversationId(newConversation.id);
           setIsCreating(false);
         }
+        // Refresh sidebar to show updated conversation list
+        await refreshConversations();
       } catch (error) {
         console.error('Failed to save conversation:', error);
         setIsCreating(false);
@@ -147,6 +154,66 @@ export default function Home() {
 
     // Set conversationId back to null
     setConversationId(null);
+  };
+
+  /**
+   * Load a specific conversation when clicked in sidebar
+   */
+  const handleSelectConversation = async (conversationId: number) => {
+    if (!user) return;
+
+    try {
+      const loadedConversations = await getUserConversations(user.id);
+      const conversation = loadedConversations.find(c => c.id === conversationId);
+
+      if (conversation) {
+        setConversationId(conversation.id);
+        const messagesWithDates = conversation.messages.map((msg: { id: string; text: string; sender: string; timestamp: string; sources?: Source[] }) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp),
+          sender: msg.sender as 'user' | 'assistant' | 'system',
+        }));
+        setMessages(messagesWithDates);
+      }
+    } catch (error) {
+      console.error('Failed to load conversation:', error);
+    }
+  };
+
+  /**
+   * Delete a conversation
+   */
+  const handleDeleteConversation = async (conversationIdToDelete: number) => {
+    if (!user) return;
+
+    try {
+      await deleteConversation(conversationIdToDelete, user.id);
+
+      // Remove from local state
+      setConversations(prev => prev.filter(c => c.id !== conversationIdToDelete));
+
+      // If deleted conversation is current one, start new chat
+      if (conversationId === conversationIdToDelete) {
+        handleClearChat();
+      }
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+      alert('Failed to delete conversation. Please try again.');
+    }
+  };
+
+  /**
+   * Refresh conversations list after creating/updating
+   */
+  const refreshConversations = async () => {
+    if (!user) return;
+
+    try {
+      const loadedConversations = await getUserConversations(user.id);
+      setConversations(loadedConversations);
+    } catch (error) {
+      console.error('Failed to refresh conversations:', error);
+    }
   };
 
   /**
@@ -221,7 +288,20 @@ export default function Home() {
   };
 
   return (
-    <div className='flex flex-col h-screen bg-gray-50'>
+    <div className='flex h-screen bg-gray-50'>
+      {/* Sidebar - Conversation List */}
+      {isLoaded && user && (
+        <ConversationList
+          conversations={conversations}
+          currentConversationId={conversationId}
+          onSelectConversation={handleSelectConversation}
+          onDeleteConversation={handleDeleteConversation}
+          onNewChat={handleClearChat}
+          />
+      )}
+
+      {/* Main Chat Area */}
+      <div className='flex flex-col flex-1'>
       {/* Header */}
       <header className='bg-white shadow-sm p-4 border-b border-gray-200'>
         <div className='max-w-4xl mx-auto flex items-center justify-between'>
@@ -306,6 +386,7 @@ export default function Home() {
           </button>
         </div>
       </div>
+    </div>
     </div>
   );
 }
