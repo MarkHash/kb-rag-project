@@ -146,6 +146,20 @@ async def chat(request: Request, query: QueryRequest):
         logger.error(f"Error in chat endpoint: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="An error occurred while processing your request")
 
+def generate_conversation_title(messages: list[dict]) -> str:
+    """
+    Generate a conversation title from the first user message.
+    Takes first 50 characters of the first user message.
+    """
+    for message in messages:
+        if message.get('sender') == 'user':
+            text = message.get('text', '')
+            # Take first 50 characters, add ellipsis if longer
+            if len(text) > 50:
+                return text[:50] + "..."
+            return text
+    return "New Conversation"
+
 @app.post("/conversations", response_model=ConversationResponse)
 async def create_conversation(
     conversation: ConversationCreate,
@@ -155,10 +169,13 @@ async def create_conversation(
     Create a new conversation for a user
     """
     try:
+        title = conversation.title
+        if not title:
+            title = generate_conversation_title(conversation.messages)
         db_conversation = Conversation(
             user_id=conversation.user_id,
             messages=conversation.messages,
-            title=conversation.title
+            title=title
         )
         db.add(db_conversation)
         db.commit()
@@ -231,3 +248,32 @@ async def update_conversation(
         logger.error(f"Error updating conversation {conversation_id}: {str(e)}", exc_info=True)
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to update conversation")
+
+@app.delete("/conversations/{conversation_id}")
+async def delete_conversation(
+    conversation_id: int,
+    user_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a specific conversation
+    Requires user_id as query parameter for security
+    """
+    try:
+        db_conversation = db.query(Conversation).filter(
+            Conversation.id == conversation_id,
+            Conversation.user_id == user_id,
+        ).first()
+
+        if not db_conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+
+        db.delete(db_conversation)
+        db.commit()
+        return {"message": "Conversation deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting conversation {conversation_id}: {str(e)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to delete conversation")
